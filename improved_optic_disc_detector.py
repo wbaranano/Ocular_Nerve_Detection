@@ -23,14 +23,14 @@ class OpticDiscDetector:
         # B-scans are typically wider than tall (aspect ratio > 2)
         # and have characteristic horizontal layering
         if aspect_ratio > 2.0:
-            # Check for horizontal layering typical of B-scans
+        
             horizontal_gradient = np.diff(image, axis=0)
             horizontal_variation = np.std(horizontal_gradient)
             
             vertical_gradient = np.diff(image, axis=1)
             vertical_variation = np.std(vertical_gradient)
             
-            # B-scans have more horizontal structure than vertical
+        
             if horizontal_variation > vertical_variation * 1.5:
                 self.image_type = 'bscan'
                 if self.debug:
@@ -54,11 +54,10 @@ class OpticDiscDetector:
         # B-scans often have speckle noise, use different denoising
         denoised = cv2.bilateralFilter(image, 9, 75, 75)
         
-        # Enhance contrast for retinal layers
-        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(16, 4))  # Different tile size for B-scans
+
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(16, 4))  
         enhanced = clahe.apply(denoised)
-        
-        # Optional: enhance horizontal structures
+   
         kernel_horizontal = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 1))
         enhanced = cv2.morphologyEx(enhanced, cv2.MORPH_TOPHAT, kernel_horizontal)
         enhanced = cv2.add(image, enhanced)
@@ -105,26 +104,25 @@ class OpticDiscDetector:
         
         methods = []
         
-        # B-scans typically have lower intensity ranges
+    
         thresh1 = min(mean_val + 1.5 * std_val, 255)
         _, binary1 = cv2.threshold(image, thresh1, 255, cv2.THRESH_BINARY)
         methods.append(("B-scan Statistical", binary1, thresh1))
         
-        # Lower percentile for B-scans
+     
         thresh2 = np.percentile(image, 95)
         _, binary2 = cv2.threshold(image, thresh2, 255, cv2.THRESH_BINARY)
         methods.append(("95th Percentile", binary2, thresh2))
         
-        # Otsu often works well for B-scans
         thresh3, binary3 = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         methods.append(("Otsu B-scan", binary3, thresh3))
         
-        # Adaptive thresholding with larger kernel for B-scans
+      
         binary4 = cv2.adaptiveThreshold(image, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
                                        cv2.THRESH_BINARY, 21, 2)
         methods.append(("Adaptive B-scan", binary4, 0))
         
-        # Custom threshold for nerve head detection in B-scans
+  
         thresh5 = mean_val + 0.8 * std_val
         _, binary5 = cv2.threshold(image, thresh5, 255, cv2.THRESH_BINARY)
         methods.append(("B-scan Custom", binary5, thresh5))
@@ -193,7 +191,7 @@ class OpticDiscDetector:
         x, y, w, h = cv2.boundingRect(contour)
         aspect_ratio = float(h) / w  # Height/width for vertical structures
         
-        # For B-scans, we're looking for more vertical structures
+      
         if aspect_ratio < 0.8:  # Should be taller than wide
             return None
         
@@ -207,7 +205,7 @@ class OpticDiscDetector:
         hull_area = cv2.contourArea(hull)
         solidity = area / hull_area if hull_area > 0 else 0
         
-        # Calculate vertical extent for the nerve head
+        
         nerve_height = h
         nerve_width = w
         
@@ -268,11 +266,11 @@ class OpticDiscDetector:
         filtered = []
         
         for candidate in candidates:
-            # Different criteria for B-scans
-            if 200 < candidate['area'] < 8000:  # Smaller areas typical
-                if candidate['aspect_ratio'] > 1.2:  # Should be vertical
-                    if candidate['solidity'] > 0.6:  # Less strict solidity
-                        if candidate['height'] > 20:  # Minimum height for nerve head
+          
+            if 200 < candidate['area'] < 8000:  
+                if candidate['aspect_ratio'] > 1.2:
+                    if candidate['solidity'] > 0.6:  
+                        if candidate['height'] > 20:  
                             x, y = candidate['center']
                             margin = 30  # Smaller margin
                             if (margin < x < w - margin and margin < y < h - margin):
@@ -355,12 +353,12 @@ class OpticDiscDetector:
         axes[0, 0].set_title(f'Original Image ({self.image_type.upper()})')
         axes[0, 0].axis('off')
         
-        # Processed image
+
         axes[0, 1].imshow(processed_image, cmap='gray')
         axes[0, 1].set_title('Preprocessed Image')
         axes[0, 1].axis('off')
         
-        # Create result image with detection
+    
         result = cv2.cvtColor(original_image, cv2.COLOR_GRAY2BGR)
         
         if candidates:
@@ -467,7 +465,7 @@ def process_all_images():
             base_filename = os.path.splitext(filename)[0]
             save_path = os.path.join(output_dir, f"{base_filename}_detection.png")
             
-            # Visualization (don't show, just save)
+           
             fig, axes = plt.subplots(2, 2, figsize=(12, 10))
             
             axes[0, 0].imshow(original, cmap='gray')
@@ -611,7 +609,7 @@ def test_detection():
         print(f"Input directory not found: {input_dir}")
         return
     
-    # Look for any supported image format
+
     image_files = []
     for ext in ['.pgm', '.tif', '.tiff', '.jpg', '.jpeg', '.png', '.bmp']:
         image_files.extend([f for f in os.listdir(input_dir) if f.lower().endswith(ext)])
@@ -620,7 +618,7 @@ def test_detection():
         print("No image files found in the directory")
         return
     
-    # Test with first image
+  
     test_image = os.path.join(input_dir, image_files[0])
     print(f"Testing with: {image_files[0]}")
     
@@ -639,7 +637,7 @@ def test_detection():
             else:
                 print(f"Optic disc radius: {best.get('radius', 'N/A')} pixels")
             
-            # Visualize the result
+           
             detector.visualize_results(candidates, original, processed)
             return best
         else:
